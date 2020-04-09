@@ -1,0 +1,39 @@
+POST http://127.0.0.1:8088/hello/
+Content-Type: application/json
+
+{
+  "id": 100,
+  "name": "name",
+  "identity": "id",
+  "hometown" : "hubei",
+  "age" : 100
+}
+
+###
+
+POST http://127.0.0.1:8088/hello/
+Content-Type: application/json
+
+{
+  "name": "name",
+  "identity": "id",
+  "hometown" : "hubei",
+  "age" : 100
+}
+
+###
+PUT http://127.0.0.1:8088/hello/100
+Content-Type: application/json
+
+{
+  "id": 100,
+  "name": "name",
+  "identity": "id",
+  "hometown" : "hubei",
+  "age" : 100
+}
+
+###
+DELETE http://127.0.0.1:8088/hello/100
+
+###
