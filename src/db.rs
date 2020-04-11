@@ -5,15 +5,13 @@ use r2d2_diesel::ConnectionManager;
 
 use diesel::pg::PgConnection;
 use actix_web::{FromRequest, HttpRequest, Error};
-use actix_web::web::Bytes;
 use actix_web::dev::{PayloadStream, Payload};
-use actix_web::error::PayloadError;
 use futures;
-use futures::FutureExt;
+use futures::{FutureExt};
 use futures::future::{LocalBoxFuture, err};
 use futures::io::ErrorKind;
 use std::io;
-use std::borrow::Borrow;
+use std::time::Duration;
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 static DATABASE_URL: Option<&'static str> = option_env!("DATABASE_URL");
@@ -27,13 +25,38 @@ pub fn connect() -> Pool {
 // Connection request guard type: a wrapper around an r2d2 pooled connection.
 pub struct Connection(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
-
 #[derive(Clone)]
-pub struct DBConfig(Pool);
+pub struct DB(pub Pool);
 
-impl Default for DBConfig {
+impl DB {
+    pub fn get(&self) -> Connection {
+        Connection(self.0.get().unwrap())
+    }
+
+    pub fn get_timeout(&self, timeout : Duration) -> Connection {
+        Connection(self.0.get_timeout(timeout).unwrap())
+    }
+
+    pub fn try_get(&self) -> Option<Connection> {
+        self.0.try_get().map(|v| Connection(v))
+    }
+}
+
+impl Default for DB {
     fn default() -> Self {
-        DBConfig(connect())
+        DB(connect())
+    }
+}
+
+
+impl FromRequest for DB {
+    type Error = ();
+    type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
+    type Config = DB;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload<PayloadStream>) -> Self::Future {
+        let config= req.app_data::<Self::Config>().unwrap();
+        futures::future::ok(config.clone()).boxed_local()
     }
 }
 
@@ -44,9 +67,9 @@ impl Default for DBConfig {
 impl FromRequest for Connection {
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self, Error>>;
-    type Config = DBConfig;
+    type Config = DB;
 
-    fn from_request(req: &HttpRequest, payload: &mut Payload<PayloadStream>) -> Self::Future {
+    fn from_request(req: &HttpRequest, _: &mut Payload<PayloadStream>) -> Self::Future {
         let pool = req
             .app_data::<Self::Config>()
             .unwrap();
@@ -69,3 +92,4 @@ impl Deref for Connection {
         &self.0
     }
 }
+
