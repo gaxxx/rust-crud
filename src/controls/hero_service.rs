@@ -1,17 +1,37 @@
 use actix_web::web::Path;
-use actix_web::{web, App, Responder, HttpServer, get, post, put, delete, Either, Scope};
+use actix_web::{web, App, Responder, HttpServer, get, post, put, delete, Either, Scope, HttpResponse};
 use serde_json::json;
 use crate::db;
 use crate::schema::heroes;
+use crate::util::PageRequest;
+
 use crate::models::hero::Hero;
 use actix_web::dev::HttpServiceFactory;
 use std::ops::Deref;
 use diesel::prelude::*;
+use crate::protos::hero::Hero as PHero;
+use std::alloc::handle_alloc_error;
+use actix_web::http::StatusCode;
+use crate::db::pagination::{Paginate, DEFAULT_PER_PAGE};
+
 
 
 #[get("/")]
-async fn read() -> impl Responder {
-    web::Json(vec!["hero", "hero"])
+async fn gets(info : web::Query<PageRequest>, conn : db::Connection) -> impl Responder {
+    let page = info.into_inner();
+    web::Json(HeroSevice::gets(page, &conn))
+}
+
+#[get("/{id}")]
+async fn get(path : Path<i32>, conn : db::Connection) -> impl Responder {
+    match HeroSevice::get(path.into_inner(), &conn) {
+        Some(v) => {
+            Either::A(web::Json(v))
+        },
+        None => {
+            Either::B(HttpResponse::new(StatusCode::NOT_FOUND))
+        }
+    }
 }
 
 #[put("/{id}")]
@@ -37,9 +57,10 @@ async fn create(hero: web::Json<Hero>, db: db::DB) -> impl Responder {
 }
 
 
-#[get("/{user}/{name}")]
-async fn hello(info: web::Path<(u32, String)>) -> impl Responder {
-    format!("Welcome {},  name {}!", info.1, info.0)
+#[get("/{hometown}/{name}")]
+async fn find(info: web::Path<(String, String)>, conn: db::Connection) -> impl Responder {
+    format!("Welcome {} from {}!", info.1, info.0);
+    web::Json(HeroSevice::find(info.0.clone(), info.1.clone(), &conn))
 }
 
 pub struct HeroSevice;
@@ -47,13 +68,20 @@ pub struct HeroSevice;
 impl HeroSevice {
     pub fn service() -> Scope {
         web::scope("/hello")
-            .service(hello)
-            .service(read)
+            .service(gets)
+            .service(find)
+            .service(get)
             .service(create)
             .service(delete)
             .service(update)
 
     }
+
+    pub fn find(hometown : String, name : String, conn : &db::Connection) -> Option<Hero> {
+        heroes::table.filter(heroes::dsl::name.eq(name))
+            .filter(heroes::dsl::hometown.eq(hometown)).first(conn.deref()).ok()
+    }
+
     pub fn create(hero: Hero, connection: &db::Connection) -> Hero {
         diesel::insert_into(heroes::table)
             .values(&hero)
@@ -63,8 +91,17 @@ impl HeroSevice {
         heroes::table.order(heroes::id.desc()).first(connection.deref()).unwrap()
     }
 
-    pub fn read(connection: &db::Connection) -> Vec<Hero> {
-        heroes::table.order(heroes::id.asc()).load::<Hero>(connection.deref()).unwrap()
+    pub fn get(id : i32, conn: &db::Connection) -> Option<Hero> {
+        heroes::table.find(id).first::<Hero>(conn.deref()).ok()
+    }
+
+    pub fn gets(page : PageRequest, conn: &db::Connection) -> Vec<Hero> {
+        // heroes::table.order(heroes::id.asc()).load::<Hero>(conn.deref()).unwrap()
+        let query = heroes::table.order(heroes::id.asc()).paginate(page.start.unwrap_or(0) as i64).count(page.count.unwrap_or(DEFAULT_PER_PAGE as u32) as i64);
+        let (heros, total) =
+            query.load_and_count::<Hero>(&conn).unwrap();
+        println!("total count {}",total);
+        heros
     }
 
     pub fn update(id: i32, hero: Hero, connection: &db::Connection) -> bool {

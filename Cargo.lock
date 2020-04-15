@@ -739,6 +739,7 @@ dependencies = [
  "diesel",
  "dotenv",
  "futures",
+ "protobuf",
  "protobuf-codegen-pure",
  "r2d2",
  "r2d2-diesel",

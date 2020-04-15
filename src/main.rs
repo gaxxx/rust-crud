@@ -3,6 +3,8 @@ mod schema;
 mod controls;
 mod models;
 mod db;
+mod protos;
+mod util;
 
 use actix_web::web::Path;
 use actix_web::{web, App, Responder, HttpServer, get, post, put, delete, Either};

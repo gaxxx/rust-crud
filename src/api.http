@@ -2,7 +2,7 @@ POST http://127.0.0.1:8088/hello/
 Content-Type: application/json
 
 {
-  "name": "name",
+  "name": "woo",
   "identity": "id",
   "hometown" : "hubei",
   "age" : 100
@@ -21,6 +21,15 @@ Content-Type: application/json
 }
 
 ###
+GET http://127.0.0.1:8088/hello/100000
+
+###
 DELETE http://127.0.0.1:8088/hello/100
 
 ###
+GET http://127.0.0.1:8088/hello/?start=0&count=10
+
+
+###
+GET http://127.0.0.1:8088/hello/hubei/woo
+

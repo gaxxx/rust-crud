@@ -1,3 +1,4 @@
+pub mod pagination;
 use std::ops::Deref;
 
 use r2d2;
