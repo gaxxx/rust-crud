@@ -1,8 +1,15 @@
+use serde::{Deserialize};
 use actix_web::{web, App, Responder, HttpServer, get};
 
+
+#[derive(Deserialize, Debug, Clone)]
+struct Info {
+    username : String
+}
+
 #[get("/{username}")]
-async fn hello(user : web::Path<String> ) -> impl Responder {
-    format!("Hello world {}", user.into_inner())
+async fn hello(user : web::Path<Info> ) -> impl Responder {
+    format!("Hello world {}", user.username)
 }
 
 
