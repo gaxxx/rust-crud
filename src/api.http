@@ -3,3 +3,14 @@ GET http://127.0.0.1:8088/hello/test
 
 ###
 
+POST  http://127.0.0.1:8088/api/
+Content-Type: application/json
+
+{
+    "name": "a",
+    "identity":  "id_a",
+    "hometown" : "city",
+    "age": 100
+}
+
+
