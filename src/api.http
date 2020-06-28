@@ -13,4 +13,22 @@ Content-Type: application/json
     "age": 100
 }
 
+###
+POST http://127.0.0.1:8088/api/3
+Content-Type: application/json
 
+{
+"name": "a",
+"identity":  "id_ccc",
+"hometown" : "city",
+"age": 102
+}
+
+###
+GET http://127.0.0.1:8088/api/2
+
+###
+DELETE http://127.0.0.1:8088/api/1
+
+###
+GET http://127.0.0.1:8088/api/

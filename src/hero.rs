@@ -1,8 +1,7 @@
 use serde::{Serialize,Deserialize};
-use diesel::prelude::*;
 use crate::schema::users;
 
-#[table_name = "users"]
+
 #[derive(Clone, Debug, Serialize, Deserialize, Queryable)]
 pub struct Hero {
     pub id: i32,

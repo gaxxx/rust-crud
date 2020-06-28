@@ -19,7 +19,7 @@ static DEFAULT_URL : &'static str = "postgres://postgres:password@127.0.0.1/hero
 
 pub fn connect() -> Pool {
     let manager = ConnectionManager::<PgConnection>::new(DATABASE_URL.unwrap_or(DEFAULT_URL));
-    r2d2::Pool::builder().build(manager).expect("Failed to create pool")
+    r2d2::Pool::builder().max_size(5).build(manager).expect("Failed to create pool")
 }
 
 // Connection request guard type: a wrapper around an r2d2 pooled connection.
