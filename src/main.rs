@@ -1,6 +1,6 @@
 #[macro_use] extern crate diesel;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use actix_web::{web, App, Responder, HttpServer, get, post, delete, Either};
 use diesel::RunQueryDsl;
 use std::ops::Deref;
@@ -14,6 +14,11 @@ mod hero;
 #[derive(Deserialize, Debug, Clone)]
 struct Info {
     username : String
+}
+
+#[derive(Deserialize, Debug)]
+struct PageRequest {
+    start : Option<i32>,
 }
 
 #[get("/{username}")]
@@ -32,7 +37,7 @@ async fn create(hero: web::Json<hero::HeroInput>, db: db::DB) -> impl Responder 
 }
 
 #[get("/{id}")]
-async fn get(update_id : web::Path<(i32)> , db : db::DB) -> impl Responder {
+async fn get(update_id : web::Path<i32> , db : db::DB) -> impl Responder {
     use schema::users::dsl::*;
     let r = users.filter(id.eq(update_id.into_inner()))
         .first::<hero::Hero>(&*db.get());
@@ -48,7 +53,7 @@ async fn get(update_id : web::Path<(i32)> , db : db::DB) -> impl Responder {
 }
 
 #[post("/{id}")]
-async fn update(update_id : web::Path<(i32)> , hero : web::Json<hero::HeroInput>, db : db::DB) -> impl Responder {
+async fn update(update_id : web::Path<i32> , hero : web::Json<hero::HeroInput>, db : db::DB) -> impl Responder {
     use schema::users::dsl::*;
     println!("input is {:?}", hero);
     let updated : hero::Hero = diesel::update(users.filter(id.eq(update_id.into_inner())))
@@ -59,7 +64,7 @@ async fn update(update_id : web::Path<(i32)> , hero : web::Json<hero::HeroInput>
 }
 
 #[delete("/{id}")]
-async fn delete(update_id : web::Path<(i32)>, db : db::DB) -> impl Responder {
+async fn delete(update_id : web::Path<i32>, db : db::DB) -> impl Responder {
     use schema::users::dsl::*;
     let count = diesel::delete(users.filter(id.eq(update_id.into_inner())))
         .execute(&*db.get()).unwrap();
@@ -68,10 +73,13 @@ async fn delete(update_id : web::Path<(i32)>, db : db::DB) -> impl Responder {
 }
 
 #[get("/")]
-async fn gets(db : db::DB) -> impl Responder {
+async fn gets(req : web::Query<PageRequest> ,db : db::DB) -> impl Responder {
     use schema::users::dsl::*;
-    let all_users = users.load::<hero::Hero>(&*db.get()).unwrap();
-    web::Json(all_users)
+    use crate::db::pagination::Paginate;
+    let query = users.order(id.asc());
+    let query = query.paginate(req.start.unwrap_or(0).into());
+    let all_users : Vec<_> = query.load::<(hero::Hero, i64)>(&*db.get()).unwrap();
+    web::Json(all_users.iter().map(|v| v.0.clone()).collect::<Vec<_>>())
 }
 
 

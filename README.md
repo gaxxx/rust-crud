@@ -95,7 +95,34 @@ diesel::delete(users.filter(id.eq(update_id.into_inner())))
 users.load::<hero::Hero>(&*db.get()).unwrap();
 ```
 
+## pagination
 
+make query pagable
+```
+impl<T> QueryFragment<Pg> for Paginated<T>
+    where
+        T: QueryFragment<Pg>,
+{
+    fn walk_ast(&self, mut out: AstPass<Pg>) -> QueryResult<()> {
+        out.push_sql("SELECT *, COUNT(*) OVER () FROM (");
+        self.query.walk_ast(out.reborrow())?;
+        out.push_sql(") t LIMIT ");
+        out.push_bind_param::<BigInt, _>(&self.count)?;
+        out.push_sql(" OFFSET ");
+        let offset = self.start;
+        out.push_bind_param::<BigInt, _>(&offset)?;
+        Ok(())
+    }
+}
+```
+
+how to use
+```
+let query = users.order(id.asc());
+let query = query.paginate(req.start.unwrap_or(0).into());
+let all_users : Vec<_> = query.load::<(hero::Hero, i64)>(&*db.get()).unwrap();
+web::Json(all_users.iter().map(|v| v.0.clone()).collect::<Vec<_>>())
+```
 
 
 

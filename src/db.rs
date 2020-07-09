@@ -1,16 +1,16 @@
+pub mod pagination;
+
 use std::ops::Deref;
 
 use r2d2;
 use r2d2_diesel::ConnectionManager;
 
 use diesel::pg::PgConnection;
-use actix_web::{FromRequest, HttpRequest, Error};
+use actix_web::{FromRequest, HttpRequest};
 use actix_web::dev::{PayloadStream, Payload};
 use futures;
 use futures::{FutureExt};
-use futures::future::{LocalBoxFuture, err};
-use futures::io::ErrorKind;
-use std::io;
+use futures::future::{LocalBoxFuture};
 use std::time::Duration;
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
